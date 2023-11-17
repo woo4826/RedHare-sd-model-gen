@@ -2,7 +2,7 @@ version: '3.9'
 services:
   train:
     build:
-      context: .
+      context: ./train
       dockerfile: Dockerfile
     deploy:
       resources:
@@ -17,16 +17,7 @@ services:
       - .:/workspace
     stdin_open: true
     tty: true
-  download_images:
-    image: easy-lora-train
-    container_name: download_images
-    volumes:
-      - .:/workspace
-    entrypoint:
-      - ./download_images.sh
-    stdin_open: true
 
-    tty: true
   nginx:
     image: nginx:1.24
     container_name: nginx

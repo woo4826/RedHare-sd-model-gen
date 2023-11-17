@@ -6,3 +6,9 @@
 /output/
 /model/
 /images/
+
+uploads/
+/.uploads/
+
+nohup.out
+/.nohup.out

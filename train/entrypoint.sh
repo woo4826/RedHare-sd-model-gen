@@ -33,13 +33,30 @@ if [ -z "$OUTPUT_NAME" ]; then
   OUTPUT_NAME="lora"
 fi
 
+# the path to the uploaded file
+FOLDER_KEY="$3"
+if [ -z "$FOLDER_KEY" ]; then
+  echo -e "Error: Path to the uploaded file is not provided"
+  exit 1
+fi
+
+
+# Create dataset_config_{FOLDER_KEY}.toml
+DATASET_CONFIG_FILE="/workspace/dataset_config_$FOLDER_KEY.toml"
+echo "[general]" > "$DATASET_CONFIG_FILE"
+echo "[[datasets]]" >> "$DATASET_CONFIG_FILE"
+echo "[[datasets.subsets]]" >> "$DATASET_CONFIG_FILE"
+echo "image_dir = '/workspace/uploads/$FOLDER_KEY'" >> "$DATASET_CONFIG_FILE"
+echo "caption_extension = '.txt'" >> "$DATASET_CONFIG_FILE"
+echo "num_repeats = 2" >> "$DATASET_CONFIG_FILE"
+
 source activate conda
 
 accelerate launch --num_cpu_threads_per_process 1 train_network.py \
   --pretrained_model_name_or_path="$MODEL_NAME_OR_PATH" \
-  --output_dir="/workspace/output" \
+  --output_dir="/workspace/output/$FOLDER_KEY" \
   --output_name="$OUTPUT_NAME" \
-  --dataset_config="/workspace/dataset_config.toml" \
+  --dataset_config="/workspace/dataset_config_$FOLDER_KEY.toml" \
   --train_batch_size=1 \
   --max_train_epochs=5 \
   --resolution="512,512" \
