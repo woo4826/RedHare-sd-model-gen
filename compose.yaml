@@ -1,0 +1,52 @@
+version: '3.9'
+services:
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    image: easy-lora-train
+    container_name: easy-lora-train
+    volumes:
+      - .:/workspace
+    stdin_open: true
+    tty: true
+  download_images:
+    image: easy-lora-train
+    container_name: download_images
+    volumes:
+      - .:/workspace
+    entrypoint:
+      - ./download_images.sh
+    stdin_open: true
+
+    tty: true
+  nginx:
+    image: nginx:1.24
+    container_name: nginx
+    restart: always
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - 80:80
+    depends_on:
+      - flask
+
+  flask:
+    build:
+      context: ./flask
+      dockerfile: Dockerfile
+    image: flask
+    container_name: flask
+    restart: always
+    ports:
+      - 5000:5000
+    volumes:
+      - ./flask/source:/source
+      - .:/workspace
