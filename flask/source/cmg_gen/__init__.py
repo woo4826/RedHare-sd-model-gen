@@ -14,7 +14,7 @@ def create_app():
         
         #path setting
         UPLOAD_FOLDER = '/workspace/uploads'
-        MODEL_OUTPUT_FOLDER = '/workspace/model_output'
+        MODEL_OUTPUT_FOLDER = '/workspace/output'
         ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
         app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

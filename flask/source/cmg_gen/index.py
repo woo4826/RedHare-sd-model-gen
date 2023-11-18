@@ -65,13 +65,13 @@ def upload_images():
 
 @bp_index.route('/output/<model_key>', methods=['GET'])
 def download_model(model_key):
-    model_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/model.safetensors')
-    local_model_path = f"uploads/{model_key}"
+    model_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/lora.safetensors')
+    model_folder_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], model_key)
 
 
     if os.path.exists(model_path):
-        return send_from_directory(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/model.safetensors', as_attachment=True)
-    elif os.path.exists(local_model_path):
+        return send_from_directory(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/lora.safetensors', as_attachment=True)
+    elif os.path.exists(model_folder_path):
         return jsonify({'message': 'Generating'})
     else:
         return jsonify({'error': 'Model not found'}), 404
