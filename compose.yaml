@@ -49,7 +49,7 @@ services:
     container_name: blog
     restart: always
     ports:
-      - 3000:3000  # Assuming your blog service runs on port 8000, adjust as needed
+      - 3000:3000
     volumes:
-      - ./blog/source:/source  # Adjust the volume mapping based on your blog service setup
+      - ./blog/source:/source
       - .:/workspace

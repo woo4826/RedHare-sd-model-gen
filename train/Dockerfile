@@ -69,9 +69,9 @@ USER root
 RUN apt-get install -y unzip
 USER $USERNAME
 
-# additional scripts
-COPY --chown=$USERNAME download_images.sh .
-RUN chmod +x download_images.sh
+# # additional scripts
+# COPY --chown=$USERNAME download_images.sh .
+# RUN chmod +x download_images.sh
 
 # entrypoint
 WORKDIR /app/sd-scripts

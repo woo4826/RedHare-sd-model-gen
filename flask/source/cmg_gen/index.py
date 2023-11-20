@@ -14,10 +14,17 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 
 
-@bp_index.route(rule="/", methods=["GET"])
-def index():
-    return "CMG Flask using nginx, docker, docker-compose,"
+# @bp_index.route(rule="/", methods=["GET"])
+# def index():
+#     return "CMG Flask using nginx, docker, docker-compose,"
+@bp_index.route("/test",methods=['GDT'])
+def test():
+    docker_binary_path = "/usr/bin/docker"
 
+    # Call the script inside the Docker container to train the model using docker-compose
+    # train_model_command = f"docker run train runwayml/stable-diffusion-v1-5 lora {file_key}"
+    train_model_command = f"{docker_binary_path} compose exec easy-lora-train runwayml/stable-diffusion-v1-5 lora asdf"
+    os.system(train_model_command)
 
 @bp_index.route('/upload', methods=['POST'])
 def upload_images():
@@ -48,9 +55,9 @@ def upload_images():
     docker_binary_path = "/usr/bin/docker"
 
     # Call the script inside the Docker container to train the model using docker-compose
-    train_model_command = f"{docker_binary_path} compose exec easy-lora-train runwayml/stable-diffusion-v1-5 {file_key}"
+    # train_model_command = f"docker run train runwayml/stable-diffusion-v1-5 lora {file_key}"
+    train_model_command = f"{docker_binary_path} compose easy-lora-train runwayml/stable-diffusion-v1-5 lora {file_key}"
     os.system(train_model_command)
-
 
     # Generate a random key for the trained model
 
@@ -59,7 +66,7 @@ def upload_images():
     model_output_folder = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{file_key}')
 
     # Generate a download URL for the user
-    download_url = f"http://203.252.166.213:5000/output/{file_key}"
+    download_url = f"http://203.252.166.213/output/{file_key}"
 
     return jsonify({'download_url': download_url})
 

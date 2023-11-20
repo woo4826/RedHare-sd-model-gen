@@ -68,7 +68,7 @@ accelerate launch --num_cpu_threads_per_process 1 train_network.py \
   --bucket_no_upscale \
   --lr_scheduler=cosine_with_restarts \
   --lr_scheduler_num_cycles=4 \
-  --lr_warmup_steps=500 \
+  --lr_warmup_steps=50 \
   --keep_tokens=1 \
   --shuffle_caption \
   --caption_dropout_rate=0.05 \
