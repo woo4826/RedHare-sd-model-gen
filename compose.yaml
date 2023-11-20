@@ -1,24 +1,26 @@
 version: '3.9'
 services:
-  # train:
-  #   build:
-  #     context: ./train
-  #     dockerfile: Dockerfile
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [ gpu ]
-  #   image: easy-lora-train
-  #   container_name: easy-lora-train
-  #   ports:
-  #     - 4000:4000
-  #   volumes:
-  #     - .:/workspace
-  #   stdin_open: true
-  #   tty: true
+  train:
+    build:
+      context: ./train
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    image: easy-lora-train
+    container_name: easy-lora-train
+    networks:
+      - mynetwork
+    ports:
+      - 4000:4000
+    volumes:
+      - .:/workspace
+    stdin_open: true
+    tty: true
 
   nginx:
     image: nginx:1.24
@@ -26,6 +28,8 @@ services:
     restart: always
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - mynetwork
     ports:
       - 80:80
     depends_on:
@@ -38,8 +42,12 @@ services:
     image: flask
     container_name: flask
     restart: always
+    networks:
+      - mynetwork
     ports:
       - 5000:5000
+    links:
+      - train
     volumes:
       - ./flask/source:/source
       - .:/workspace
@@ -56,3 +64,7 @@ services:
     volumes:
       - ./blog/source:/source
       - .:/workspace
+
+networks:
+  mynetwork:
+    driver: bridge

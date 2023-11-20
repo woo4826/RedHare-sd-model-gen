@@ -60,23 +60,27 @@ RUN source activate conda && \
   pip install --no-cache-dir xformers==0.0.17  \
   pip install Flask==2.3.2
 
-COPY ./app/main.py /sd-scripts/main.py
 # install triton
 # https://github.com/P2Enjoy/kohya_ss-docker/blob/736c0116b00904e700f3bad825a19c873f1a85be/docker-compose.yml
 RUN source activate conda && \
   pip install triton==2.0.0
 
+WORKDIR /app/
+COPY ./app/app.py /app/sd-scripts/
 RUN source activate conda
+RUN pip install Flask==2.3.2
+
 EXPOSE 4000
 
-CMD ["python", "main.py"]
+
+CMD ["python", "app.py"]
 
 
 
 # additional libraries
-USER root
-RUN apt-get install -y unzip
-USER $USERNAME
+# USER root
+# RUN apt-get install -y unzip
+# USER $USERNAME
 
 # # additional scripts
 # COPY --chown=$USERNAME download_images.sh .

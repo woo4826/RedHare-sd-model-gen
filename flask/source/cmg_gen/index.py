@@ -2,6 +2,10 @@ import os
 import random
 import string
 from flask import Blueprint, jsonify, request, send_from_directory, current_app
+import logging 
+import asyncio
+import requests
+
 
 bp_index = Blueprint(name="index", import_name=__name__, url_prefix="")
 
@@ -17,7 +21,7 @@ def test():
     return jsonify({'cu':'dd'})
 
 @bp_index.route('/upload', methods=['POST'])
-def upload_images():
+async def upload_images():
     if 'files' not in request.files:
         return jsonify({'error': 'No files provided'}), 400
 
@@ -39,17 +43,8 @@ def upload_images():
 
             uploaded_filenames.append(f"uploads/{file_key}/{filename}")
 
-
-
-    # Assuming the Docker binary is in /usr/bin/docker, you might need to adjust this path based on your system
-    docker_binary_path = "/usr/bin/docker"
-
-    # Call the script inside the Docker container to train the model using docker-compose
-    # train_model_command = f"docker run train runwayml/stable-diffusion-v1-5 lora {file_key}"
-    train_model_command = f"{docker_binary_path} compose easy-lora-train runwayml/stable-diffusion-v1-5 lora {file_key}"
-    os.system(train_model_command)
-    #TODO:: modifing
-
+    # asyncio.create_task(send_get_request(file_key))
+    requests.get("http://train:4000/train/"+file_key)
     # Generate a download URL for the user
     download_url = f"http://203.252.166.213/output/{file_key}"
 
@@ -57,12 +52,12 @@ def upload_images():
 
 @bp_index.route('/output/<model_key>', methods=['GET'])
 def download_model(model_key):
-    model_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/lora.safetensors')
+    model_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/{model_key}.safetensors')
     model_folder_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], model_key)
 
 
     if os.path.exists(model_path):
-        return send_from_directory(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/lora.safetensors', as_attachment=True)
+        return send_from_directory(current_app.config['MODEL_OUTPUT_FOLDER'], f'{model_key}/{model_key}.safetensors', as_attachment=True)
     elif os.path.exists(model_folder_path):
         return jsonify({'message': 'Generating'})
     else:
@@ -77,3 +72,23 @@ def allowed_file(filename):
 def generate_random_string(length=10):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for _ in range(length))
+
+async def send_get_request(key):
+    # 외부 서버의 URL 설정
+    external_url = f''
+
+    try:
+        # GET 요청 보내기
+        logging.info(external_url)
+        response = requests.get("http://train:4000/train/"+key)
+
+        # 응답 확인
+        if response.status_code == 200:
+            logging.info(response.text)
+            return f'Success! Response: {response.text}'
+        else:
+            logging.info(response.status_code)
+            return f'Error! Status code: {response.status_code}'
+
+    except Exception as e:
+        return f'An error occurred: {str(e)}'

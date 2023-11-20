@@ -12,3 +12,5 @@ uploads/
 
 nohup.out
 /.nohup.out
+
+*/__pycache__/*
