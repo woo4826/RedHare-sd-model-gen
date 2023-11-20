@@ -19,6 +19,7 @@ services:
   #     - .:/workspace
   #   stdin_open: true
   #   tty: true
+
   nginx:
     image: nginx:1.24
     container_name: nginx
@@ -42,6 +43,7 @@ services:
     volumes:
       - ./flask/source:/source
       - .:/workspace
+
   blog:
     build:
       context: ./blog

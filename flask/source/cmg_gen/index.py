@@ -10,21 +10,11 @@ UPLOAD_FOLDER = '/workspace/uploads'
 MODEL_OUTPUT_FOLDER = '/workspace/model_output'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 # [".png", ".jpg", ".jpeg", ".webp", ".bmp"] 
-#문제는 지원되는 열차 데이터 확장과 관련이 있을 수 있습니다. Kohya 스크립트에서 지원되는 이미지 확장자는 [".png", ".jpg", ".jpeg", ".webp", ".bmp"]다음에 설명되어 있습니다 train_util.py.
 
 
-
-# @bp_index.route(rule="/", methods=["GET"])
-# def index():
-#     return "CMG Flask using nginx, docker, docker-compose,"
-@bp_index.route("/test",methods=['GDT'])
+@bp_index.route('/test', methods=['GET'])
 def test():
-    docker_binary_path = "/usr/bin/docker"
-
-    # Call the script inside the Docker container to train the model using docker-compose
-    # train_model_command = f"docker run train runwayml/stable-diffusion-v1-5 lora {file_key}"
-    train_model_command = f"{docker_binary_path} compose exec easy-lora-train runwayml/stable-diffusion-v1-5 lora asdf"
-    os.system(train_model_command)
+    return jsonify({'cu':'dd'})
 
 @bp_index.route('/upload', methods=['POST'])
 def upload_images():
@@ -58,12 +48,7 @@ def upload_images():
     # train_model_command = f"docker run train runwayml/stable-diffusion-v1-5 lora {file_key}"
     train_model_command = f"{docker_binary_path} compose easy-lora-train runwayml/stable-diffusion-v1-5 lora {file_key}"
     os.system(train_model_command)
-    
-    # Generate a random key for the trained model
-
-    # Update the model path to include the random string in the URL
-    model_path = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{file_key}/model.safetensors')
-    model_output_folder = os.path.join(current_app.config['MODEL_OUTPUT_FOLDER'], f'{file_key}')
+    #TODO:: modifing
 
     # Generate a download URL for the user
     download_url = f"http://203.252.166.213/output/{file_key}"

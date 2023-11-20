@@ -21,7 +21,7 @@ const ImageUploader = () => {
           // setFileKey(key);
           displayImage(file);
           logToFile(file);
-          sendToServer(file);
+          // sendToServer(file);
         }
       }
     }
@@ -39,13 +39,13 @@ const ImageUploader = () => {
         const file = files[i];
         displayImage(file);
         logToFile(file);
-        
+
       }
       sendToServer(files);
     }
   };
 
- 
+
 
   const displayImage = (file) => {
     const reader = new FileReader();
@@ -67,9 +67,12 @@ const ImageUploader = () => {
     console.log('Selected file:', file);
   };
 
-  const sendToServer = (file) => {
+  const sendToServer = (files) => {
     const formData = new FormData();
-    formData.append('files', file);
+
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
 
     // You can use the fetch API to send the file and key to the server
     fetch('http://203.252.166.213/upload', {
@@ -80,6 +83,7 @@ const ImageUploader = () => {
       .then((response) => response.json())
       .then((data) => {
         console.log('Server response:', data);
+
         setServerUrl(data['download_url']);
       })
       .catch((error) => console.error('Error sending file to server:', error));
