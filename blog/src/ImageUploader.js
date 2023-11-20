@@ -17,11 +17,11 @@ const ImageUploader = () => {
       for (let i = 0; i < data.items.length; i++) {
         if (data.items[i].kind === 'file') {
           const file = data.items[i].getAsFile();
-          const key = generateRandomKey();
-          setFileKey(key);
-          displayImage(file, key);
-          logToFile(file, key);
-          sendToServer(file, key);
+          // const key = generateRandomKey();
+          // setFileKey(key);
+          displayImage(file);
+          logToFile(file);
+          sendToServer(file);
         }
       }
     }
@@ -41,7 +41,7 @@ const ImageUploader = () => {
         logToFile(file);
         
       }
-      sendToServer(file);
+      sendToServer(files);
     }
   };
 
@@ -63,9 +63,8 @@ const ImageUploader = () => {
     reader.readAsDataURL(file);
   };
 
-  const logToFile = (file, key) => {
+  const logToFile = (file) => {
     console.log('Selected file:', file);
-    console.log('File Key:', key);
   };
 
   const sendToServer = (file) => {
@@ -75,7 +74,7 @@ const ImageUploader = () => {
     // You can use the fetch API to send the file and key to the server
     fetch('http://203.252.166.213/upload', {
       method: 'POST',
-      mode: 'no-cors',
+      // mode: 'no-cors',
       body: formData,
     })
       .then((response) => response.json())

@@ -58,7 +58,7 @@ RUN source activate conda && \
   --extra-index-url https://download.pytorch.org/whl/cu116 && \
   pip install --upgrade -r requirements.txt && \
   pip install --no-cache-dir xformers==0.0.17  \
-  pip install --no-cache-dir Flask==2.3.2
+  pip install Flask==2.3.2
 
 COPY ./app/main.py /sd-scripts/main.py
 # install triton
