@@ -41,3 +41,15 @@ services:
     volumes:
       - ./flask/source:/source
       - .:/workspace
+  blog:
+    build:
+      context: ./blog
+      dockerfile: Dockerfile
+    image: blog
+    container_name: blog
+    restart: always
+    ports:
+      - 3000:3000  # Assuming your blog service runs on port 8000, adjust as needed
+    volumes:
+      - ./blog/source:/source  # Adjust the volume mapping based on your blog service setup
+      - .:/workspace
