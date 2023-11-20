@@ -58,7 +58,7 @@ def upload_images():
     # train_model_command = f"docker run train runwayml/stable-diffusion-v1-5 lora {file_key}"
     train_model_command = f"{docker_binary_path} compose easy-lora-train runwayml/stable-diffusion-v1-5 lora {file_key}"
     os.system(train_model_command)
-
+    
     # Generate a random key for the trained model
 
     # Update the model path to include the random string in the URL

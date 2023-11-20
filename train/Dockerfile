@@ -57,12 +57,21 @@ RUN source activate conda && \
   pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 \
   --extra-index-url https://download.pytorch.org/whl/cu116 && \
   pip install --upgrade -r requirements.txt && \
-  pip install --no-cache-dir xformers==0.0.17
+  pip install --no-cache-dir xformers==0.0.17  \
+  pip install --no-cache-dir Flask==2.3.2
 
+COPY ./app/main.py /sd-scripts/main.py
 # install triton
 # https://github.com/P2Enjoy/kohya_ss-docker/blob/736c0116b00904e700f3bad825a19c873f1a85be/docker-compose.yml
 RUN source activate conda && \
   pip install triton==2.0.0
+
+RUN source activate conda
+EXPOSE 4000
+
+CMD ["python", "main.py"]
+
+
 
 # additional libraries
 USER root
@@ -76,6 +85,14 @@ USER $USERNAME
 # entrypoint
 WORKDIR /app/sd-scripts
 COPY --chown=$USERNAME entrypoint.sh .
+
 RUN chmod +x entrypoint.sh
 
-ENTRYPOINT ["./entrypoint.sh"]
+# RUN pip install --no-cache-dir flask
+
+
+
+
+
+
+# ENTRYPOINT ["./entrypoint.sh"]

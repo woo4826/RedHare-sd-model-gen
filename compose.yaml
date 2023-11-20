@@ -13,6 +13,8 @@ services:
               capabilities: [ gpu ]
     image: easy-lora-train
     container_name: easy-lora-train
+    ports:
+      - 4000:4000
     volumes:
       - .:/workspace
     stdin_open: true
