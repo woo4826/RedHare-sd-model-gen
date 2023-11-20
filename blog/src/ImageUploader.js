@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 
 const ImageUploader = () => {
-  const [fileKey, setFileKey] = useState(null);
   const [serverUrl, setServerUrl] = useState(null);
   const [enteredKey, setEnteredKey] = useState('');
 
@@ -38,20 +37,17 @@ const ImageUploader = () => {
     if (files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const key = generateRandomKey();
-        setFileKey(key);
-        displayImage(file, key);
-        logToFile(file, key);
-        sendToServer(file, key);
+        displayImage(file);
+        logToFile(file);
+        
       }
+      sendToServer(file);
     }
   };
 
-  const generateRandomKey = () => {
-    return Math.random().toString(36).substring(7);
-  };
+ 
 
-  const displayImage = (file, key) => {
+  const displayImage = (file) => {
     const reader = new FileReader();
 
     reader.onload = function (e) {
@@ -61,7 +57,6 @@ const ImageUploader = () => {
       imgElement.alt = file.name;
       imgElement.style.maxWidth = '30%';
       imgElement.style.maxHeight = '30%';
-      imageContainer.innerHTML = `<p>File Key: ${key}</p>`;
       imageContainer.appendChild(imgElement);
     };
 
@@ -73,10 +68,9 @@ const ImageUploader = () => {
     console.log('File Key:', key);
   };
 
-  const sendToServer = (file, key) => {
+  const sendToServer = (file) => {
     const formData = new FormData();
     formData.append('files', file);
-    formData.append('key', key);
 
     // You can use the fetch API to send the file and key to the server
     fetch('http://203.252.166.213/upload', {
@@ -92,9 +86,6 @@ const ImageUploader = () => {
       .catch((error) => console.error('Error sending file to server:', error));
   };
 
-  const handleKeyInputChange = (event) => {
-    setEnteredKey(event.target.value);
-  };
 
   const retrieveUrl = () => {
     // You can use the fetch API to retrieve the URL based on the entered key
@@ -120,8 +111,6 @@ const ImageUploader = () => {
       <div id="image-container"></div>
       <div>
         <p>서버로부터 받은 URL: {serverUrl}</p>
-        <label htmlFor="enteredKey">URL을 가져오려면 키를 입력하세요:</label>
-        <input type="text" id="enteredKey" value={enteredKey} onChange={handleKeyInputChange} />
         <button onClick={retrieveUrl}>URL 가져오기</button>
       </div>
     </div>
