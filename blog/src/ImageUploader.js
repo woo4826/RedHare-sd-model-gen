@@ -13,17 +13,18 @@ const ImageUploader = () => {
   const drop = (ev) => {
     ev.preventDefault();
     const data = ev.dataTransfer;
+    const fileList = [];
+  
     if (data.items) {
       for (let i = 0; i < data.items.length; i++) {
         if (data.items[i].kind === 'file') {
           const file = data.items[i].getAsFile();
-          // const key = generateRandomKey();
-          // setFileKey(key);
+          fileList.push(file);
           displayImage(file);
           logToFile(file);
-          // sendToServer(file);
         }
       }
+      sendToServer(fileList);
     }
   };
 
@@ -114,7 +115,6 @@ const ImageUploader = () => {
       <div id="image-container"></div>
       <div>
         <p>서버로부터 받은 URL: {serverUrl}</p>
-        <button onClick={retrieveUrl}>URL 가져오기</button>
       </div>
     </div>
   );
