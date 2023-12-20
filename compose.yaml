@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 services:
   train:
     build:
@@ -10,7 +10,7 @@ services:
           devices:
             - driver: nvidia
               count: all
-              capabilities: [ gpu ]
+              capabilities: [gpu]
     image: easy-lora-train
     container_name: easy-lora-train
     networks:
@@ -60,7 +60,7 @@ services:
     container_name: blog
     restart: always
     ports:
-      - 3000:3000
+      - 3001:3000
     volumes:
       - ./blog/source:/source
       - .:/workspace

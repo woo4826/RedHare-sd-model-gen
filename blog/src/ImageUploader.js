@@ -14,7 +14,7 @@ const ImageUploader = () => {
     ev.preventDefault();
     const data = ev.dataTransfer;
     const fileList = [];
-  
+
     if (data.items) {
       for (let i = 0; i < data.items.length; i++) {
         if (data.items[i].kind === 'file') {
@@ -76,7 +76,7 @@ const ImageUploader = () => {
     }
 
     // You can use the fetch API to send the file and key to the server
-    fetch('http://203.252.166.213/upload', {
+    fetch('http://203.252.161.105/upload', {
       method: 'POST',
       // mode: 'no-cors',
       body: formData,
@@ -93,7 +93,7 @@ const ImageUploader = () => {
 
   const retrieveUrl = () => {
     // You can use the fetch API to retrieve the URL based on the entered key
-    fetch(`http://203.252.166.213/outputs/key=${enteredKey}`,)
+    fetch(`http://203.252.161.105/output/key=${enteredKey}`,)
       .then((response) => response.json())
       .then((data) => {
         console.log('Retrieved URL:', data.url);

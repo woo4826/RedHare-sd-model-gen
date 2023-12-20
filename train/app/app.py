@@ -9,7 +9,7 @@ app = Flask(__name__)
 def train_model(key):
     # Call entrypoint.sh script from /app/sd-scripts/
     script_path = '/app/sd-scripts/entrypoint.sh'
-    subprocess.run(['/bin/bash', script_path, "runwayml/stable-diffusion-v1-5",key,key])
+    subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
     return f'Training for key {key} started.'
 
 if __name__ == '__main__':

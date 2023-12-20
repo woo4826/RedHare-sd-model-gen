@@ -14,3 +14,7 @@ nohup.out
 /.nohup.out
 
 */__pycache__/*
+
+*.toml
+
+/workspace/*

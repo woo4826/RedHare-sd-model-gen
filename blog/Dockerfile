@@ -20,7 +20,7 @@ RUN npm run build
 RUN npm install -g serve
 
 # Expose port 3000 (or the port your application uses)
-EXPOSE 3000
+EXPOSE 3001
 
 # Command to run when the container starts
 CMD [ "serve", "-s", "build" ]

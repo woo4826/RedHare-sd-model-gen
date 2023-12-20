@@ -18,7 +18,7 @@ FROM nvidia/cuda:11.6.2-cudnn8-devel-ubuntu20.04
 ARG DEBIAN_FRONTEND=noninteractive
 # user
 ARG USERNAME=user
-ARG USER_UID=1003 
+ARG USER_UID=1000
 #수정됨 1000->1000
 ARG USER_GID=$USER_UID
 

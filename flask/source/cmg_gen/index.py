@@ -46,7 +46,7 @@ async def upload_images():
     # asyncio.create_task(send_get_request(file_key))
     requests.get("http://train:4000/train/"+file_key)
     # Generate a download URL for the user
-    download_url = f"http://203.252.166.213/output/{file_key}"
+    download_url = f"http://203.252.161.105/output/{file_key}"
 
     return jsonify({'download_url': download_url})
 
