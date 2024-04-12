@@ -5,23 +5,20 @@ import os
 from http.client import HTTPException
 import io
 
-
-import asyncio
-
 from io import BytesIO
 import json
 import requests
 import base64
-from PIL import PngImagePlugin,Image
+
 
 
 app = Flask(__name__)
 
 
 @app.route('/train/<key>', methods=['GET'])
-async def train_model(key):
+def train_model(key):
     # 특정 디렉토리에 대해 이미지 태그 생성
-    catption_res = await  gen_lora(key)
+    catption_res = gen_lora(key)
     # # Call entrypoint.sh script from /sd-scripts/
     # script_path = '/sd-scripts/entrypoint.sh'
     # subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
@@ -29,19 +26,23 @@ async def train_model(key):
     return f'Image tagging started {key}'
 
 
-async def gen_lora(folder_name : str):    
+def gen_lora(folder_name : str):    
     #사용가능한 모델확인
     # response = requests.get("http://127.0.0.1:7860/tagger/v1/interrogators")
     # print(response.status_code)
     
-    sd_url = 'http://127.0.0.1:7860/tagger/v1/interrogate'
+    sd_url = 'http://host.docker.internal:7860/tagger/v1/interrogate'
     model = 'wd14-convnext'
     threshold = 0.35
-    base_path = './images/'+ folder_name 
-    
+    base_path = '/workspace/workspace/images/'+ folder_name #train/images/asdfasdf/01.png
+
+    # print(os.getcwd())
+    # print(os.listdir(os.getcwd()))
+    # print(os.listdir('../'+os.getcwd()))
+    print(os.listdir('/workspace/workspace/images'))
+
     for file in os.listdir(base_path):
         file_path =  f"{base_path}/{file}"
-        print(file.__str__)
         
         if is_image_file(file):  
             continue #  if not image file, continue for loop

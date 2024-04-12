@@ -21,49 +21,51 @@ services:
       - .:/workspace
     stdin_open: true
     tty: true
+    extra_hosts:
+     - 'host.docker.internal:host-gateway'
 
-  nginx:
-    image: nginx:1.24
-    container_name: nginx
-    restart: always
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-    networks:
-      - mynetwork
-    ports:
-      - 80:80
-    depends_on:
-      - flask
+  # nginx:
+  #   image: nginx:1.24
+  #   container_name: nginx
+  #   restart: always
+  #   volumes:
+  #     - ./nginx/conf.d:/etc/nginx/conf.d
+  #   networks:
+  #     - mynetwork
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     - flask
 
-  flask:
-    build:
-      context: ./flask
-      dockerfile: Dockerfile
-    image: flask
-    container_name: flask
-    restart: always
-    networks:
-      - mynetwork
-    ports:
-      - 5000:5000
-    links:
-      - train
-    volumes:
-      - ./flask/source:/source
-      - .:/workspace
+  # flask:
+  #   build:
+  #     context: ./flask
+  #     dockerfile: Dockerfile
+  #   image: flask
+  #   container_name: flask
+  #   restart: always
+  #   networks:
+  #     - mynetwork
+  #   ports:
+  #     - 5000:5000
+  #   links:
+  #     - train
+  #   volumes:
+  #     - ./flask/source:/source
+  #     - .:/workspace
 
-  blog:
-    build:
-      context: ./blog
-      dockerfile: Dockerfile
-    image: blog
-    container_name: blog
-    restart: always
-    ports:
-      - 3001:3000
-    volumes:
-      - ./blog/source:/source
-      - .:/workspace
+  # blog:
+  #   build:
+  #     context: ./blog
+  #     dockerfile: Dockerfile
+  #   image: blog
+  #   container_name: blog
+  #   restart: always
+  #   ports:
+  #     - 3001:3000
+  #   volumes:
+  #     - ./blog/source:/source
+  #     - .:/workspace
 
 networks:
   mynetwork:
