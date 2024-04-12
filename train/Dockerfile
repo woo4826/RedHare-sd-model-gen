@@ -59,7 +59,8 @@ RUN source activate conda && \
   --extra-index-url https://download.pytorch.org/whl/cu116 && \
   pip install --upgrade -r requirements.txt && \
   pip install --no-cache-dir xformers==0.0.17 && \ 
-  pip install Flask==2.3.2
+  # pip install Flask==2.3.2 \
+  pip install flask[async]
 #수정: no-cach 끝에 &&추가
 
 # install triton
@@ -67,8 +68,8 @@ RUN source activate conda && \
 RUN source activate conda && \
   pip install triton==2.0.0
 
-WORKDIR /app/
-COPY ./app/app.py /app/sd-scripts/
+WORKDIR /
+COPY ./app.py /app/sd-scripts/
 RUN source activate conda
 RUN pip install Flask==2.3.2
 # Flask가 사용할 포트
