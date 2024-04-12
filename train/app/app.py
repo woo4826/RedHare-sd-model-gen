@@ -31,7 +31,8 @@ def gen_lora(folder_name : str):
     # response = requests.get("http://127.0.0.1:7860/tagger/v1/interrogators")
     # print(response.status_code)
     
-    sd_url = 'http://host.docker.internal:7860/tagger/v1/interrogate'
+    # sd_url = 'http://203.252.161.105:7860/tagger/v1/interrogate'
+    sd_url = 'https://92dba0dbfb47e03d96.gradio.live/tagger/v1/interrogate'
     model = 'wd14-convnext'
     threshold = 0.35
     base_path = '/workspace/workspace/images/'+ folder_name #train/images/asdfasdf/01.png
@@ -40,11 +41,12 @@ def gen_lora(folder_name : str):
     # print(os.listdir(os.getcwd()))
     # print(os.listdir('../'+os.getcwd()))
     print(os.listdir('/workspace/workspace/images'))
-
+    print(base_path)
+    print(os.listdir(base_path))
     for file in os.listdir(base_path):
         file_path =  f"{base_path}/{file}"
         
-        if is_image_file(file):  
+        if not is_image_file(file):  
             continue #  if not image file, continue for loop
         
         # base64 encode
@@ -57,15 +59,20 @@ def gen_lora(folder_name : str):
             "model": model,
             "threshold": threshold,
         }
-
+        print('response sent' +  file )
+        print('data :  '+  data['model'])
         response = requests.post(sd_url, json=data)
 
         json_data=response.text
         tagger_infor = json.loads(json_data)
 
         txt_path  = f"{base_path}/{file.split('.')[0]}.txt"
+        print('============')
+        print(tagger_infor)
+        print('============')
         with open(txt_path, 'w') as f:
             for key in tagger_infor['caption'].keys():
+                print(key)
                 f.write(f'{key}, ')
     return True
                 
