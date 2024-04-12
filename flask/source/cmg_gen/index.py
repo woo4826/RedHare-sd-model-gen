@@ -18,7 +18,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 @bp_index.route('/test', methods=['GET'])
 def test():
-    return jsonify({'cu':'dd'})
+    return jsonify({'cu':'dd'}), 200
 
 @bp_index.route('/upload', methods=['POST'])
 async def upload_images():

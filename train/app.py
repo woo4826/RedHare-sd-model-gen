@@ -1,0 +1,79 @@
+from flask import Flask
+import subprocess
+import os
+
+from http.client import HTTPException
+import io
+
+
+import asyncio
+
+from io import BytesIO
+import json
+import requests
+import base64
+from PIL import PngImagePlugin,Image
+
+
+app = Flask(__name__)
+
+
+@app.route('/train/<key>', methods=['GET'])
+async def train_model(key):
+    # 특정 디렉토리에 대해 이미지 태그 생성
+    catption_res = await  gen_lora(key)
+    # # Call entrypoint.sh script from /sd-scripts/
+    # script_path = '/sd-scripts/entrypoint.sh'
+    # subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+    # return f'Training for key {key} started.'
+    return f'Image tagging started {key}'
+
+
+async def gen_lora(folder_name : str):    
+    #사용가능한 모델확인
+    # response = requests.get("http://127.0.0.1:7860/tagger/v1/interrogators")
+    # print(response.status_code)
+    
+    sd_url = 'http://127.0.0.1:7860/tagger/v1/interrogate'
+    model = 'wd14-convnext'
+    threshold = 0.35
+    base_path = './images/'+ folder_name 
+    
+    for file in os.listdir(base_path):
+        file_path =  f"{base_path}/{file}"
+        print(file.__str__)
+        
+        if is_image_file(file):  
+            continue #  if not image file, continue for loop
+        
+        # base64 encode
+        with open(file_path, "rb") as image_file:
+            image_data = image_file.read()
+            encoded_image = base64.b64encode(image_data).decode("utf-8")
+
+        data={
+            "image": encoded_image,
+            "model": model,
+            "threshold": threshold,
+        }
+
+        response = requests.post(sd_url, json=data)
+
+        json_data=response.text
+        tagger_infor = json.loads(json_data)
+
+        txt_path  = f"{base_path}/{file.split('.')[0]}.txt"
+        with open(txt_path, 'w') as f:
+            for key in tagger_infor['caption'].keys():
+                f.write(f'{key}, ')
+    return True
+                
+                
+
+def is_image_file(file_path):
+    image_extensions = ['.jpg', '.jpeg', '.png']
+    extension = os.path.splitext(file_path)[1].lower()
+    return extension in image_extensions
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=4000, debug= True)

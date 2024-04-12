@@ -1,6 +1,0 @@
-[general]
-[[datasets]]
-[[datasets.subsets]]
-image_dir = '/workspace/uploads/cihjcnilgv'
-caption_extension = '.txt'
-num_repeats = 2

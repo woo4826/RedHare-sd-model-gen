@@ -10,13 +10,16 @@ export HF_HOME=/workspace/.cache/huggingface
 mkdir -p "$HF_HOME/accelerate"
 cp "$BUILD_HF_HOME/accelerate/default_config.yaml" "$HF_HOME/accelerate"
 
-# the output directory for a LoRA model
+# the output directory for a LoRA model 로라모델 디렉토리
 mkdir -p /workspace/output
 
 # model name such as `runwayml/stable-diffusion-v1-5`
 # also accepts a path to model file
 MODEL_NAME_OR_PATH="$1"
 # try to use `model/*.safetensors` if the argument not specified
+#모델 이름 or path 할당
+#만약 변수가 비어 있다면 .safetensors 파일찾아서 저장
+#만약 파일이 없다면, 에러 메시지를 출력
 if [ -z "$MODEL_NAME_OR_PATH" ]; then
   MODEL_PATH=`echo /workspace/model/*.safetensors`
   if [ ! -f "$MODEL_PATH" ]; then
@@ -28,12 +31,14 @@ fi
 
 # output name without file extension
 # the filename defaults to `output/lora.safetensors`
+#출력 파일의 이름
 OUTPUT_NAME="$2"
 if [ -z "$OUTPUT_NAME" ]; then
   OUTPUT_NAME="lora"
 fi
 
 # the path to the uploaded file
+#업로드 파일의 경로
 FOLDER_KEY="$3"
 if [ -z "$FOLDER_KEY" ]; then
   echo -e "Error: Path to the uploaded file is not provided"
@@ -42,6 +47,8 @@ fi
 
 
 # Create dataset_config_{FOLDER_KEY}.toml
+#toml(데이터 구조 나타내는 형식) 생성
+#
 DATASET_CONFIG_FILE="/workspace/train/dataset_config_$FOLDER_KEY.toml"
 echo "[general]" > "$DATASET_CONFIG_FILE"
 echo "[[datasets]]" >> "$DATASET_CONFIG_FILE"
