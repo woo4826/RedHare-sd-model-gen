@@ -20,8 +20,9 @@ def train_model(key):
     # 특정 디렉토리에 대해 이미지 태그 생성
     catption_res = gen_lora(key)
     # # Call entrypoint.sh script from /sd-scripts/
-    # script_path = '/sd-scripts/entrypoint.sh'
-    # subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+    #script_path = '/sd-scripts/entrypoint.sh'
+    script_path = '/workspace/train/entrypoint.sh'
+    subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
     # return f'Training for key {key} started.'
     return f'Image tagging started {catption_res}'
 
@@ -32,13 +33,16 @@ def gen_lora(folder_name : str):
     # print(response.status_code)
     
     # sd_url = 'http://203.252.161.105:7860/tagger/v1/interrogate'
-    sd_url = 'http://203.252.161.106:7860/tagger/v1/interrogate'
+    sd_url = 'http://203.252.161.105:7860/tagger/v1/interrogate'
     # sd_url = 'https://92dba0dbfb47e03d96.gradio.live/tagger/v1/interrogate'
     model = 'wd14-convnext'
     threshold = 0.35
-    base_path = '/workspace/workspace/images/'+ folder_name #train/images/asdfasdf/01.png
+    #base_path = '/workspace/workspace/images/'+ folder_name #train/images/asdfasdf/01.png
+    base_path = '/workspace/uploads/'+ folder_name #train/images/asdfasdf/01.png
 
-    print(os.listdir('/workspace/workspace/images'))
+
+    # print(os.listdir('/workspace/workspace/images'))
+    print(os.listdir('/workspace/uploads'))
     print(base_path)
     print(os.listdir(base_path))
     for file in os.listdir(base_path):
