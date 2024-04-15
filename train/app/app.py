@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Blueprint,Flask, jsonify, request, current_app
 import subprocess
 import os
 
@@ -10,9 +10,65 @@ import json
 import requests
 import base64
 
+import random
+import string
 
+UPLOAD_FOLDER = '/workspace/uploads'
+MODEL_OUTPUT_FOLDER = '/workspace/model_output'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+bp_index = Blueprint(name="index", import_name=__name__, url_prefix="")
+
+@app.route('/test', methods=['GET'])
+def test():
+    return jsonify({'cu':'dd'}), 200
+
+#이미지 파일 저장 후 customized model 생성
+@app.route('/generateModel', methods=['POST'])
+def upload_images():
+
+    if 'files' not in request.files:
+        return jsonify({'error': 'No files provided'}), 400
+    else:
+        print("file exist")
+
+    files = request.files.getlist('files')
+
+    uploaded_filenames = []
+    file_key = generate_random_string()
+    print(file_key)
+    for index, file in enumerate(files, start=1):
+        if file and allowed_file(file.filename):
+            print(index,"번째 파일")
+            # Save the uploaded file to the UPLOAD_FOLDER with the key as a subdirectory
+            #print(app.config['UPLOAD_FOLDER'])
+            upload_folder_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file_key)
+            print(upload_folder_path)
+            os.makedirs(upload_folder_path, exist_ok=True)
+            print("생성")
+            
+            # Save the file with a numerical filename (1, 2, 3, ...)
+            filename = f"{index}.png"
+            filepath = os.path.join(upload_folder_path, filename)
+            file.save(filepath)
+
+            uploaded_filenames.append(f"uploads/{file_key}/{filename}")
+
+    # asyncio.create_task(send_get_request(file_key))
+    requests.get("http://train:4000/train/"+file_key)
+    # # Generate a download URL for the user
+    # download_url = f"http://203.252.161.106/output/{file_key}"
+
+    return jsonify({'result': "성공"}), 200
+
+def generate_random_string(length=10):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for _ in range(length))
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @app.route('/train/<key>', methods=['GET'])
