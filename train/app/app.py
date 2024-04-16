@@ -13,13 +13,14 @@ import base64
 import random
 import string
 
+import uuid
+
 UPLOAD_FOLDER = '/workspace/uploads'
 MODEL_OUTPUT_FOLDER = '/workspace/model_output'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-bp_index = Blueprint(name="index", import_name=__name__, url_prefix="")
 
 @app.route('/test', methods=['GET'])
 def test():
@@ -32,22 +33,20 @@ def upload_images():
     if 'files' not in request.files:
         return jsonify({'error': 'No files provided'}), 400
     else:
-        print("file exist")
+        print("image file exist")
 
     files = request.files.getlist('files')
 
+    #파일 패쓰 생성
     uploaded_filenames = []
-    file_key = generate_random_string()
-    print(file_key)
+    #file_key = generate_random_string()
+    file_key = str(uuid.uuid4())
+    #print("uuid path 생성:",file_key)
+
     for index, file in enumerate(files, start=1):
         if file and allowed_file(file.filename):
-            print(index,"번째 파일")
-            # Save the uploaded file to the UPLOAD_FOLDER with the key as a subdirectory
-            #print(app.config['UPLOAD_FOLDER'])
             upload_folder_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file_key)
-            print(upload_folder_path)
             os.makedirs(upload_folder_path, exist_ok=True)
-            print("생성")
             
             # Save the file with a numerical filename (1, 2, 3, ...)
             filename = f"{index}.png"
@@ -56,14 +55,16 @@ def upload_images():
 
             uploaded_filenames.append(f"uploads/{file_key}/{filename}")
 
-    # asyncio.create_task(send_get_request(file_key))
-    requests.get("http://train:4000/train/"+file_key)
-    # # Generate a download URL for the user
-    # download_url = f"http://203.252.161.106/output/{file_key}"
+    
+    #태커 생성 후 customized 모델 생성
+    train_res = train_model(file_key)
+    if(train_res==False):
+        return jsonify({'error': 'Tag creation failed'}), 400
 
-    return jsonify({'result': "성공"}), 200
+    return jsonify({'result': "Customized Model Creation Completed"}), 200
 
-def generate_random_string(length=10):
+
+def generate_random_string(length=10): #
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for _ in range(length))
 
@@ -71,33 +72,36 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@app.route('/train/<key>', methods=['GET'])
+#@app.route('/train/<key>', methods=['GET'])
+# 특정 디렉토리에 대해 이미지 태그 생성
 def train_model(key):
-    # 특정 디렉토리에 대해 이미지 태그 생성
-    catption_res = gen_lora(key)
-    # # Call entrypoint.sh script from /sd-scripts/
-    #script_path = '/sd-scripts/entrypoint.sh'
+    catption_res = gen_tagger(key)
+    if catption_res == False:
+        print("태그 생성 실패")
+        return False
+    else:
+        print("태그 생성 완료")
+
     script_path = '/workspace/train/entrypoint.sh'
-    subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
-    # return f'Training for key {key} started.'
-    return f'Image tagging started {catption_res}'
+    try:
+        subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': 'customized model creation failed'}), 400
+    return True
 
 
-def gen_lora(folder_name : str):    
+def gen_tagger(folder_name : str):    
     #사용가능한 모델확인
     # response = requests.get("http://127.0.0.1:7860/tagger/v1/interrogators")
     # print(response.status_code)
     
-    # sd_url = 'http://203.252.161.105:7860/tagger/v1/interrogate'
     sd_url = 'http://203.252.161.105:7860/tagger/v1/interrogate'
     # sd_url = 'https://92dba0dbfb47e03d96.gradio.live/tagger/v1/interrogate'
     model = 'wd14-convnext'
     threshold = 0.35
-    #base_path = '/workspace/workspace/images/'+ folder_name #train/images/asdfasdf/01.png
-    base_path = '/workspace/uploads/'+ folder_name #train/images/asdfasdf/01.png
+    base_path = '/workspace/uploads/'+ folder_name
 
 
-    # print(os.listdir('/workspace/workspace/images'))
     print(os.listdir('/workspace/uploads'))
     print(base_path)
     print(os.listdir(base_path))
@@ -119,8 +123,13 @@ def gen_lora(folder_name : str):
         }
         print('response sent' +  file )
         print('data :  '+  data['model'])
-        response = requests.post(sd_url, json=data)
-
+        
+        try:
+            response = requests.post(sd_url, json=data)
+        except requests.exceptions.ConnectionError as e:
+            print(f"Connection error: {e}")
+            return False
+        
         json_data=response.text
         tagger_infor = json.loads(json_data)
 

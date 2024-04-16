@@ -49,7 +49,7 @@ fi
 # Create dataset_config_{FOLDER_KEY}.toml
 #toml(데이터 구조 나타내는 형식) 생성
 #
-DATASET_CONFIG_FILE="/workspace/train/dataset_config_$FOLDER_KEY.toml"
+DATASET_CONFIG_FILE="/workspace/train/dc_$FOLDER_KEY.toml"
 echo "[general]" > "$DATASET_CONFIG_FILE"
 echo "[[datasets]]" >> "$DATASET_CONFIG_FILE"
 echo "[[datasets.subsets]]" >> "$DATASET_CONFIG_FILE"
@@ -63,7 +63,7 @@ accelerate launch --num_cpu_threads_per_process 1 train_network.py \
   --pretrained_model_name_or_path="$MODEL_NAME_OR_PATH" \
   --output_dir="/workspace/output/$FOLDER_KEY" \
   --output_name="$OUTPUT_NAME" \
-  --dataset_config="/workspace/train/dataset_config_$FOLDER_KEY.toml" \
+  --dataset_config="/workspace/train/dc_$FOLDER_KEY.toml" \
   --train_batch_size=1 \
   --max_train_epochs=5 \
   --resolution="512,512" \
