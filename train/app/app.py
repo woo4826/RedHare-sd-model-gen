@@ -39,10 +39,10 @@ def upload_images():
 
     #파일 패쓰 생성
     uploaded_filenames = []
-    #file_key = generate_random_string()
     file_key = str(uuid.uuid4())
-    #print("uuid path 생성:",file_key)
+    print("uuid path 생성:",file_key)
 
+    #이미지 파일 저장
     for index, file in enumerate(files, start=1):
         if file and allowed_file(file.filename):
             upload_folder_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file_key)
@@ -55,18 +55,24 @@ def upload_images():
 
             uploaded_filenames.append(f"uploads/{file_key}/{filename}")
 
+
+    #이미지에 대한 txt파일 생성
+    catption_res = gen_tagger(file_key)
+    if catption_res == False:
+        print("태그 생성 실패")
+        return jsonify({'error': 'Tag creation failed'}), 400
+    else:
+        print("태그 생성 성공")
     
-    #태커 생성 후 customized 모델 생성
+    
+    #customized 모델 생성
     train_res = train_model(file_key)
     if(train_res==False):
-        return jsonify({'error': 'Tag creation failed'}), 400
+        print("모델 생성 실패")
+        return jsonify({'error': 'customized model creation failed'}), 400
 
     return jsonify({'result': "Customized Model Creation Completed"}), 200
 
-
-def generate_random_string(length=10): #
-    letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for _ in range(length))
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -75,18 +81,13 @@ def allowed_file(filename):
 #@app.route('/train/<key>', methods=['GET'])
 # 특정 디렉토리에 대해 이미지 태그 생성
 def train_model(key):
-    catption_res = gen_tagger(key)
-    if catption_res == False:
-        print("태그 생성 실패")
-        return False
-    else:
-        print("태그 생성 완료")
-
     script_path = '/workspace/train/entrypoint.sh'
     try:
-        subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+        result=subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+        if result.returncode != 0:
+            return False
     except subprocess.CalledProcessError as e:
-        return jsonify({'error': 'customized model creation failed'}), 400
+        return False
     return True
 
 
@@ -102,9 +103,9 @@ def gen_tagger(folder_name : str):
     base_path = '/workspace/uploads/'+ folder_name
 
 
-    print(os.listdir('/workspace/uploads'))
-    print(base_path)
-    print(os.listdir(base_path))
+    # print(os.listdir('/workspace/uploads'))
+    # print(base_path)
+    # print(os.listdir(base_path))
     for file in os.listdir(base_path):
         file_path =  f"{base_path}/{file}"
         
@@ -121,8 +122,8 @@ def gen_tagger(folder_name : str):
             "model": model,
             "threshold": threshold,
         }
-        print('response sent' +  file )
-        print('data :  '+  data['model'])
+        # print('response sent' +  file )
+        # print('data :  '+  data['model'])
         
         try:
             response = requests.post(sd_url, json=data)
@@ -134,12 +135,12 @@ def gen_tagger(folder_name : str):
         tagger_infor = json.loads(json_data)
 
         txt_path  = f"{base_path}/{file.split('.')[0]}.txt"
-        print('============')
-        print(tagger_infor)
-        print('============')
+        # print('============')
+        # print(tagger_infor)
+        # print('============')
         with open(txt_path, 'w') as f:
             for key in tagger_infor['caption'].keys():
-                print(key)
+                # print(key)
                 f.write(f'{key}, ')
     return True
                 
