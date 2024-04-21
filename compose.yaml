@@ -19,6 +19,7 @@ services:
       - 4000:4000
     volumes:
       - .:/workspace
+ #     - .:/output #cusomized model 접근가능
     stdin_open: true
     tty: true
     extra_hosts:

@@ -16,7 +16,6 @@ import string
 import uuid
 
 UPLOAD_FOLDER = '/workspace/uploads'
-MODEL_OUTPUT_FOLDER = '/workspace/model_output'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
@@ -55,7 +54,6 @@ def upload_images():
 
             uploaded_filenames.append(f"uploads/{file_key}/{filename}")
 
-
     #이미지에 대한 txt파일 생성
     catption_res = gen_tagger(file_key)
     if catption_res == False:
@@ -83,7 +81,8 @@ def allowed_file(filename):
 def train_model(key):
     script_path = '/workspace/train/entrypoint.sh'
     try:
-        result=subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+        #result=subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
+        result=subprocess.run(['/bin/bash', script_path, "/workspace/workspace/model/magic.safetensors",key,key])
         if result.returncode != 0:
             return False
     except subprocess.CalledProcessError as e:

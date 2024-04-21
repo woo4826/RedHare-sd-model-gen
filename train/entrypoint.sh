@@ -16,17 +16,19 @@ mkdir -p /workspace/output
 # model name such as `runwayml/stable-diffusion-v1-5`
 # also accepts a path to model file
 MODEL_NAME_OR_PATH="$1"
+echo "$MODEL_NAME_OR_PATH"
 # try to use `model/*.safetensors` if the argument not specified
 #모델 이름 or path 할당
 #만약 변수가 비어 있다면 .safetensors 파일찾아서 저장
 #만약 파일이 없다면, 에러 메시지를 출력
 if [ -z "$MODEL_NAME_OR_PATH" ]; then
-  MODEL_PATH=`echo /workspace/model/*.safetensors`
+  ls -l /workspace/workspace/model/*.safetensors
+  MODEL_PATH=`echo /workspace/workspace/model/magic.safetensors`
   if [ ! -f "$MODEL_PATH" ]; then
     echo -e "Error: model/*.safetensors does not exist"
     exit 1
   fi
-  MODEL_NAME_OR_PATH="$MODEL_PATH"
+  MODEL_NAME_OR_PATH="$MODEL_PATH"  
 fi
 
 # output name without file extension
