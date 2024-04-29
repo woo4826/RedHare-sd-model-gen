@@ -15,19 +15,32 @@ import string
 
 import uuid
 
+
 UPLOAD_FOLDER = '/workspace/uploads'
+OUTPUT_FOLDER = '/workspace/output'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
 @app.route('/test', methods=['GET'])
 def test():
+    # token1=create_token()
+    # print(token1)
+    # valid=validate_token(token1)
+    # print(valid)
+
     return jsonify({'cu':'dd'}), 200
 
 #이미지 파일 저장 후 customized model 생성
 @app.route('/generateModel', methods=['POST'])
 def upload_images():
+
+    request_id = request.form.get('id')
+    if not request_id:
+        return jsonify({'error': 'No ID provided in the request'}), 400
+    print(request_id)
 
     if 'files' not in request.files:
         return jsonify({'error': 'No files provided'}), 400
@@ -53,28 +66,31 @@ def upload_images():
             file.save(filepath)
 
             uploaded_filenames.append(f"uploads/{file_key}/{filename}")
+    
+    output_folder_path = os.path.join(current_app.config['OUTPUT_FOLDER'],file_key)
+    
 
-    #이미지에 대한 txt파일 생성
-    catption_res = gen_tagger(file_key)
-    if catption_res == False:
-        print("태그 생성 실패")
-        return jsonify({'error': 'Tag creation failed'}), 400
-    else:
-        print("태그 생성 성공")
+    # #이미지에 대한 txt파일 생성
+    # catption_res = gen_tagger(file_key)
+    # if catption_res == False:
+    #     print("태그 생성 실패")
+    #     return jsonify({'error': 'Tag creation failed'}), 400
+    # else:
+    #     print("태그 생성 성공")
     
     
-    #customized 모델 생성
-    train_res = train_model(file_key)
-    if(train_res==False):
-        print("모델 생성 실패")
-        return jsonify({'error': 'customized model creation failed'}), 400
+    # #customized 모델 생성
+    # train_res = train_model(file_key)
+    # if(train_res==False):
+    #     print("모델 생성 실패")
+    #     return jsonify({'error': 'customized model creation failed'}), 400
 
-    return jsonify({'result': "Customized Model Creation Completed"}), 200
+    return jsonify({'user_id':request_id,'modelName':file_key,'modelPath': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
+    
 
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 #@app.route('/train/<key>', methods=['GET'])
 # 특정 디렉토리에 대해 이미지 태그 생성

@@ -31,6 +31,8 @@ if [ -z "$MODEL_NAME_OR_PATH" ]; then
   MODEL_NAME_OR_PATH="$MODEL_PATH"  
 fi
 
+echo "사용된 모델 이름: $MODEL_NAME_OR_PATH"
+
 # output name without file extension
 # the filename defaults to `output/lora.safetensors`
 #출력 파일의 이름
@@ -61,7 +63,7 @@ echo "num_repeats = 2" >> "$DATASET_CONFIG_FILE"
 
 source activate conda
 
-accelerate launch --num_cpu_threads_per_process 1 train_network.py \
+accelerate launch --num_cpu_threads_per_process 2 train_network.py \
   --pretrained_model_name_or_path="$MODEL_NAME_OR_PATH" \
   --output_dir="/workspace/output/$FOLDER_KEY" \
   --output_name="$OUTPUT_NAME" \
@@ -70,15 +72,15 @@ accelerate launch --num_cpu_threads_per_process 1 train_network.py \
   --max_train_epochs=10 \
   --resolution="512,512" \
   --optimizer_type="AdamW8bit" \
-  --learning_rate=5e-4 \
-  --network_dim=16 \
-  --network_alpha=8 \
+  --learning_rate=1e-4 \
+  --network_dim=32 \
+  --network_alpha=16 \
   --enable_bucket \
   --bucket_no_upscale \
   --lr_scheduler=cosine_with_restarts \
   --lr_scheduler_num_cycles=3 \
   --lr_warmup_steps=0 \
-  --keep_tokens=1 \
+  --keep_tokens=0 \
   --shuffle_caption \
   --caption_dropout_rate=0.05 \
   --save_model_as=safetensors \
