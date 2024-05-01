@@ -19,7 +19,7 @@ services:
       - 4000:4000
     volumes:
       - .:/workspace
-      - /home/user/SD/stable-diffusion-webui-docker/data/models/Lora:/output #cusomized model 접근가능
+      - /home/user/SD/stable-diffusion-webui-docker/data/models/Lora:/workspace/output:rw #cusomized model 접근가능
     stdin_open: true
     tty: true
     extra_hosts:

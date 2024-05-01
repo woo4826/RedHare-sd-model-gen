@@ -26,10 +26,20 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
 @app.route('/test', methods=['GET'])
 def test():
-    # token1=create_token()
-    # print(token1)
-    # valid=validate_token(token1)
-    # print(valid)
+    home_directory = os.path.expanduser("~")  # 사용자의 홈 디렉토리 경로 가져오기
+
+    target_directory = os.path.join(home_directory, "SD")  # SD 디렉토리의 전체 경로 생성
+
+    if os.path.exists(target_directory) and os.path.isdir(target_directory):
+        print("홈 디렉토리에 SD 디렉토리가 있습니다.")
+    else:
+        print("홈 디렉토리에 SD 디렉토리가 없습니다.")
+
+    directory = '/home/user/SD'
+    if os.path.exists(directory):
+        print("홈 디렉토리에 SD 디렉토리가 있습니다.")
+    else:
+        print("홈 디렉토리에 SD 디렉토리가 없습니다.")
 
     return jsonify({'cu':'dd'}), 200
 
@@ -69,23 +79,24 @@ def upload_images():
     
     output_folder_path = os.path.join(current_app.config['OUTPUT_FOLDER'],file_key)
     
-
-    # #이미지에 대한 txt파일 생성
-    # catption_res = gen_tagger(file_key)
-    # if catption_res == False:
-    #     print("태그 생성 실패")
-    #     return jsonify({'error': 'Tag creation failed'}), 400
-    # else:
-    #     print("태그 생성 성공")
+    #이미지에 대한 txt파일 생성
+    catption_res = gen_tagger(file_key)
+    if catption_res == False:
+        print("태그 생성 실패")
+        return jsonify({'error': 'Tag creation failed'}), 400
+    else:
+        print("태그 생성 성공")
     
     
-    # #customized 모델 생성
-    # train_res = train_model(file_key)
-    # if(train_res==False):
-    #     print("모델 생성 실패")
-    #     return jsonify({'error': 'customized model creation failed'}), 400
+    #customized 모델 생성
+    train_res = train_model(file_key)
+    if(train_res==False):
+        print("모델 생성 실패")
+        return jsonify({'error': 'customized model creation failed'}), 400
 
-    return jsonify({'user_id':request_id,'modelName':file_key,'modelPath': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
+
+    model_name=file_key+'.safetensors'
+    return jsonify({'user_id':request_id,'model_name':model_name,'model_path': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
     
 
 
@@ -111,9 +122,9 @@ def gen_tagger(folder_name : str):
     # response = requests.get("http://127.0.0.1:7860/tagger/v1/interrogators")
     # print(response.status_code)
     
-    sd_url = 'http://203.252.161.105:7860/tagger/v1/interrogate'
+    sd_url = 'http://203.252.161.106:7860/tagger/v1/interrogate'
     # sd_url = 'https://92dba0dbfb47e03d96.gradio.live/tagger/v1/interrogate'
-    model = 'wd14-convnext'
+    model = 'wd14-convnext.v1'
     threshold = 0.35
     base_path = '/workspace/uploads/'+ folder_name
 
@@ -155,7 +166,7 @@ def gen_tagger(folder_name : str):
         # print('============')
         with open(txt_path, 'w') as f:
             for key in tagger_infor['caption'].keys():
-                # print(key)
+                print(key)
                 f.write(f'{key}, ')
     return True
                 
