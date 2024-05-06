@@ -14,7 +14,16 @@ import random
 import string
 
 import uuid
+from datetime import datetime
 
+from sqlalchemy import *
+from sqlalchemy.orm import sessionmaker
+
+DB_URL = 'mysql+pymysql://root:1234@redhare:3306/cmg'
+
+# cur.execute("Insert into customized_model Values(pk_id값)")
+# cur.execute("Insert into cm_processing Values("customized model 생성중")")
+# cur.execute("Select id From user Where pk")
 
 UPLOAD_FOLDER = '/workspace/uploads'
 OUTPUT_FOLDER = '/workspace/output'
@@ -26,21 +35,6 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
 @app.route('/test', methods=['GET'])
 def test():
-    home_directory = os.path.expanduser("~")  # 사용자의 홈 디렉토리 경로 가져오기
-
-    target_directory = os.path.join(home_directory, "SD")  # SD 디렉토리의 전체 경로 생성
-
-    if os.path.exists(target_directory) and os.path.isdir(target_directory):
-        print("홈 디렉토리에 SD 디렉토리가 있습니다.")
-    else:
-        print("홈 디렉토리에 SD 디렉토리가 없습니다.")
-
-    directory = '/home/user/SD'
-    if os.path.exists(directory):
-        print("홈 디렉토리에 SD 디렉토리가 있습니다.")
-    else:
-        print("홈 디렉토리에 SD 디렉토리가 없습니다.")
-
     return jsonify({'cu':'dd'}), 200
 
 #이미지 파일 저장 후 customized model 생성
@@ -61,7 +55,20 @@ def upload_images():
 
     #파일 패쓰 생성
     uploaded_filenames = []
-    file_key = str(uuid.uuid4())
+    
+    # 현재 날짜 및 시간 가져오기
+    now = datetime.now()
+
+    # 원하는 포맷으로 날짜 및 시간 포맷팅
+    date_time_str = now.strftime("%Y-%m-%d-%H-%M-%S")
+
+    # UUID 생성
+    file_key = f"{date_time_str}"
+    # precessing entity 불러오기 - 함수 (lora id )
+    # processing entity 상태 변경하기 - 함수 (Processing entity,)
+
+    # lora entity 생성 - 함수 (userId)
+
     print("uuid path 생성:",file_key)
 
     #이미지 파일 저장
@@ -86,7 +93,6 @@ def upload_images():
         return jsonify({'error': 'Tag creation failed'}), 400
     else:
         print("태그 생성 성공")
-    
     
     #customized 모델 생성
     train_res = train_model(file_key)
