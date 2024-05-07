@@ -78,37 +78,33 @@ class cm_processing(Base):
     status = Column(String)
 
 
+@app.route('/DB_check', methods=['GET'])
 def connect_DB():
     with Session() as session:
         try:
             users = session.query(User).all()
-
-            print("Users:")
-            for user in users:
-                print(f"ID: {user.id}, Name: {user.fullName}, Email: {user.email}")
-
-            print("\n")
+            user_data = [{'id': user.id, 'name': user.fullName, 'email': user.email} for user in users]
 
             # CM 모델 테이블 조회
             cm_models = session.query(customized_model).all()
-            print("Customized Models:")
-            for model in cm_models:
-                print(f"CID: {model.cid}, User ID: {model.user_id}, UUID: {model.uuId}")
-
-            print("\n")
+            model_data = [{'cid': model.cid, 'user_id': model.user_id, 'uuId': model.uuId} for model in cm_models]
 
             # Session 모델 테이블 조회
             cm_sessions = session.query(cm_processing).all()
-            print("CM Processing Sessions:")
-            for session in cm_sessions:
-                print(f"PID: {session.pid}, UUID: {session.uuId}, Status: {session.status}")
+            session_data = [{'pid': session.pid, 'uuId': session.uuId, 'status': session.status} for session in cm_sessions]
+
+            response_data = {
+                'users': user_data,
+                'customized_models': model_data,
+                'cm_processing_sessions': session_data
+            }
+            return jsonify(response_data), 200
 
         except Exception as e:
             print("실패",e)
 
 @app.route('/test', methods=['GET'])
 def test():
-    connect_DB()
     return jsonify({'cu':'dd'}), 200
 
 #사용자별 로라 조회
@@ -187,6 +183,11 @@ def upload_images():
     if not request_id:
         return jsonify({'error': 'No ID provided in the request'}), 400
     print(request_id)
+
+    #id 존재여부 검사
+    check_id=exist_id(request_id)
+    if not check_id:
+        return jsonify({'error': 'ID not exist'}), 400
 
     request_uuid = request.form.get('uuid')
     if not request_uuid:
@@ -376,7 +377,7 @@ def save_model_db(request_id,request_uuid):
         except Exception as e:
             print("실패",e)
 
-
+#uuid 중복검사
 def duplicate_uuid(request_uuid):
     with Session() as session:
         try:
@@ -391,6 +392,23 @@ def duplicate_uuid(request_uuid):
         except Exception as e:
             print(f"Error occurred: {str(e)}")
             return jsonify({'error': e}), 400
+
+#id 존재여부 검사
+def exist_id(request_id):
+    with Session() as session:
+        try:
+            existing_model = session.query(User).filter_by(fullName=request_id).first()
+            print("존재검사",request_id)
+
+            if existing_model:
+                print(f"유저 존재")
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"Error occurred: {str(e)}")
+            return jsonify({'error': e}), 400
+
 
 
 if __name__ == '__main__':
