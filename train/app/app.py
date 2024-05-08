@@ -10,7 +10,10 @@ import requests
 import base64
 
 
-
+import uuid
+from datetime import datetime
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 
 from sqlalchemy import create_engine, text
 from sqlalchemy import Column, Integer, String, DateTime
@@ -29,10 +32,7 @@ app.config["OUTPUT_FOLDER"] = OUTPUT_FOLDER
 
 db = {"user": "redhare", "password": "redhare!", "host": "host.docker.internal", "port": 3306, "database": "cmg"}
 
-DB_URL = (
-    f"mysql+mysqlconnector://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['database']}?charset=utf8"
-)
-print(DB_URL)
+DB_URL = f"mysql+mysqlconnector://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['database']}?charset=utf8"
 engine = create_engine(DB_URL, pool_pre_ping=True)
 
 try:
@@ -45,30 +45,61 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
 
-# User 모델
+# # User 모델
+# class User(Base):
+#     __tablename__ = 'users'
+
+#     id = Column(Integer, primary_key=True)
+#     fullName = Column(String)
+#     email = Column(String)
+
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    fullName = Column(String(255))
+    email = Column(String(255), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    refreshToken = Column(String(255), nullable=True)
 
-    id = Column(Integer, primary_key=True)
+    def __repr__(self):
+        return f"<User(email='{self.email}', fullName='{self.fullName}')>"
+    
+class CustomizedModel(Base):
+    __tablename__ = 'Customized_Model'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    uuid = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
 
+    def __repr__(self):
+        return f'<CustomizedModel {self.uuid}>'
 
+class CMProcessing(Base):
+    __tablename__ = 'CMProcessing'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
+    status = Column(String, nullable=False)
+
+    def __repr__(self):
+        return f"<CMProcessing(id={self.id}, uuid='{self.uuid}', status='{self.status}')>"
 
 # CM 모델
-class customized_model(Base):
-    __tablename__ = "customized_model"
+# class customized_model(Base):
+#     __tablename__ = 'customized_model'
 
-    cid = Column(Integer, primary_key=True)
-    uid = Column(Integer)
-    independentKey = Column(String)
-
+#     cid = Column(Integer, primary_key=True)
+#     user_id = Column(String)
+#     uuId = Column(Integer)
 
 # processing
-class cm_processing(Base):
-    __tablename__ = "cm_processing"
+# class cm_processing(Base):
+#     __tablename__ = 'cm_processing'
 
-    pid = Column(Integer, primary_key=True)
-    independentKey = Column(String)
-    status = Column(String)
+#     pid = Column(Integer, primary_key=True)
+#     uuId = Column(String)
+#     status = Column(String)
 
 
 @app.route("/DB_check", methods=["GET"])
@@ -76,22 +107,21 @@ def connect_DB():
     with Session() as session:
         try:
             users = session.query(User).all()
-            user_data = [{"id": user.id,  "email": user.email} for user in users]
+            user_data = [{'id': user.id, 'name': user.fullName, 'email': user.email} for user in users]
 
+            
             # CM 모델 테이블 조회
-            cm_models = session.query(customized_model).all()
-            model_data = [{"cid": model.cid, "uid": model.id, "independentKey": model.independentKey} for model in cm_models]
-
-            # Session 모델 테이블 조회
-            cm_sessions = session.query(cm_processing).all()
-            session_data = [
-                {"pid": session.pid, "independentKey": session.independentKey, "status": session.status} for session in cm_sessions
-            ]
+            cm_models = session.query(CustomizedModel).all()
+            model_data = [{'id': model.id, 'user_id': model.user_id, 'uuid': model.uuid} for model in cm_models]
+            print(model_data)    
+            # # Session 모델 테이블 조회
+            # cm_sessions = session.query(CMProcessing).all()
+            # session_data = [{'pid': session.id, 'uuId': session.uuid, 'status': session.status} for session in cm_sessions]
 
             response_data = {
-                "users": user_data,
-                "customized_models": model_data,
-                "cm_processing_sessions": session_data,
+                 'users': user_data,
+                 'customized_models': model_data,
+            #     'cm_processing_sessions': session_data
             }
             return jsonify(response_data), 200
 
@@ -110,8 +140,8 @@ def show_models():
 
     with Session() as session:
         try:
-            # 요청받은 ID와 일치하는 independentKey를 가진 customized_model 테이블의 행들을 조회
-            all_models = session.query(customized_model).filter_by(uid=uid).all()
+            # 요청받은 ID와 일치하는 uuid를 가진 customized_model 테이블의 행들을 조회
+            all_models = session.query(CustomizedModel).filter_by(user_id=user_id).all()
 
             if all_models:
                 model_info = []
@@ -138,9 +168,9 @@ def delete_file():
 
     with Session() as session:
         try:
-            find_model = session.query(customized_model).filter_by(independentKey=independentKey).first()
-            find_process = session.query(cm_processing).filter_by(independentKey=independentKey).first()
-
+            find_model = session.query(CustomizedModel).filter_by(uuid=uuid).first()
+            find_process = session.query(CMProcessing).filter_by(uuid=uuid).first()
+            
             if find_model:
                 flie_name = f"{find_model.id}_{independentKey}"
                 print(flie_name)
@@ -237,22 +267,12 @@ def upload_images():
         print("모델 생성 실패")
         return jsonify({"error": "customized model creation failed"}), 400
 
-    cm_processing_status(request_independentKey, 1)  # 모델 생성 완료
-    save_model_db(request_id, request_independentKey)
+    cm_processing_status(request_uuid,1)#모델 생성 완료
+    save_model_db(request_id,request_uuid)
 
-    model_name = file_key + ".safetensors"
-    return (
-        jsonify(
-            {
-                "uid": request_id,
-                "model_name": model_name,
-                "model_path": output_folder_path,
-                "result": "Customized Model Creation Completed",
-            }
-        ),
-        200,
-    )
-
+    model_name=file_key+'.safetensors'
+    return jsonify({'user_id':request_id,'model_name':model_name,'model_path': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
+    
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -279,7 +299,7 @@ def gen_tagger(folder_name: str):
 
     sd_url = "http://203.252.161.105:7860/tagger/v1/interrogate"
     # sd_url = 'https://92dba0dbfb47e03d96.gradio.live/tagger/v1/interrogate'
-    model = "wd14-convnext.v1"
+    model = 'wd14-vit.v1'
     threshold = 0.35
     base_path = "/workspace/uploads/" + folder_name
 
@@ -314,12 +334,12 @@ def gen_tagger(folder_name: str):
         json_data = response.text
         tagger_infor = json.loads(json_data)
 
-        txt_path = f"{base_path}/{file.split('.')[0]}.txt"
-        # print('============')
-        # print(tagger_infor)
-        # print('============')
-        with open(txt_path, "w") as f:
-            for key in tagger_infor["caption"].keys():
+        txt_path  = f"{base_path}/{file.split('.')[0]}.txt"
+        print('============')
+        print(tagger_infor)
+        print('============')
+        with open(txt_path, 'w') as f:
+            for key in tagger_infor['caption']['tag'].keys():
                 print(key)
                 f.write(f"{key}, ")
     return True
@@ -347,14 +367,14 @@ def find_files_with_username(directory, username):
 def cm_processing_status(request_independentKey, status_num):
     with Session() as session:
         try:
-            if status_num == 0:  # 생성중
-                change_processing = cm_processing(independentKey=request_independentKey, status="모델 생성중")
+            if status_num==0: #생성중
+                change_processing = CMProcessing(uuid=request_uuid, status="모델 생성중")
                 session.add(change_processing)
                 print("모델 생성중 업데이트")
             else:
-                change_processing = session.query(cm_processing).filter_by(independentKey=request_independentKey).first()
-                if status_num == 1:
-                    change_processing.status = "모델 생성 완료"
+                change_processing = session.query(CMProcessing).filter_by(uuid=request_uuid).first()
+                if(status_num==1):
+                    change_processing.status = '모델 생성 완료'
                     print("모델 생성 완료 업데이트")
                 else:
                     change_processing.status = "모델 생성 실패"
@@ -370,7 +390,7 @@ def cm_processing_status(request_independentKey, status_num):
 def save_model_db(request_id, request_independentKey):
     with Session() as session:
         try:
-            save_model = customized_model(user_id=request_id, independentKey=request_independentKey)
+            save_model = customized_model(user_id=request_id, uuid=request_uuid)
             session.add(save_model)
             session.commit()
         except Exception as e:
@@ -381,8 +401,8 @@ def save_model_db(request_id, request_independentKey):
 def duplicate_independentKey(request_independentKey):
     with Session() as session:
         try:
-            existing_model = session.query(customized_model).filter_by(independentKey=request_independentKey).first()
-            print("중복검사", request_independentKey)
+            existing_model = session.query(CustomizedModel).filter_by(uuid=request_uuid).first()
+            print("중복검사",request_uuid)
 
             if existing_model:
                 print(f"Error: independentKey '{request_independentKey}' already exists in the database.")

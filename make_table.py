@@ -36,25 +36,44 @@ class User(Base):
     email = Column(String, unique=True)
 
 
-# CM 모델
-class customized_model(Base):
-    __tablename__ = "customized_model"
+# # CM 모델
+# class customized_model(Base):
+#     __tablename__ = 'customized_model'
 
-    cid = Column(Integer, primary_key=True)
-    uid = Column(Integer)
-    independentKey = Column(String)
+#     cid = Column(Integer, primary_key=True,autoincrement=True)
+#     user_id = Column(String(255))
+#     uuId = Column(String(255))
+
+# # processing
+# class cm_processing(Base):
+#     __tablename__ = 'cm_processing'
+
+#     pid = Column(Integer, primary_key=True,autoincrement=True)
+#     uuId = Column(String(255))
+#     status = Column(String(255))
 
 
-# processing
-class cm_processing(Base):
-    __tablename__ = "cm_processing"
+class CustomizedModel(Base):
+    __tablename__ = 'Customized_Model'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    uuid = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
 
-    pid = Column(Integer, primary_key=True)
-    independentKey = Column(String)
-    status = Column(String)
+    def __repr__(self):
+        return f'<CustomizedModel {self.uuid}>'
 
+class CMProcessing(Base):
+    __tablename__ = 'CMProcessing'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
+    status = Column(String, nullable=False)
 
-# Base.metadata.create_all(engine)
+    def __repr__(self):
+        return f"<CMProcessing(id={self.id}, uuid='{self.uuid}', status='{self.status}')>"
+
+Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
 
@@ -89,4 +108,4 @@ def connect_DB():
         print("실패", e)
 
 
-connect_DB()
+#connect_DB()
