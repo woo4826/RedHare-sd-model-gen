@@ -8,6 +8,7 @@ import io
 import json
 import requests
 import base64
+import threading
 
 
 import uuid
@@ -22,7 +23,6 @@ from sqlalchemy.orm import declarative_base
 import mysql.connector
 
 from enum import Enum, auto
-
 
 UPLOAD_FOLDER = "/workspace/uploads"
 OUTPUT_FOLDER = "/workspace/output"
@@ -41,6 +41,7 @@ class cm_status(Enum):
     generating = "Model Generating"
     complete = "Model Generation Complete"
     fail = "Model Generation Failed"
+    removed = "removed Model"
 
 
 # try:
@@ -175,20 +176,17 @@ def delete_file():
 
     return jsonify({'independentKey':independentKey,'userId':userId}), 200
 
-
 # 이미지 파일 저장 후 customized model 생성
 @app.route("/model", methods=["POST"])
-def upload_images():
-    
+def model_generation():
     data=request.form
-
     user_id = data.get("user_id")
-
+    request_independentKey = data.get("independent_key")
     check_id = exist_id(user_id)
     if not check_id:
         return jsonify({"error": "ID not exist"}), 400
 
-    request_independentKey = data.get("independent_key")
+    
     if not request_independentKey:
         return jsonify({"error": "No independentKey provided in the request"}), 400
     print(request_independentKey)
@@ -196,15 +194,20 @@ def upload_images():
     # independentKey 중복검사
     duplicate_check = duplicate_independentKey(request_independentKey)
     if duplicate_check:
+        print("duplicate_independentKey")
         return jsonify({"error": "The independentKey is duplicated"}), 400
 
+        
+
+    print("fuck man")
     if "files" not in request.files:
         return jsonify({"error": "No files provided"}), 400
     else:
         print("image file exist")
+    print("fuck man")
 
     files = request.files.getlist("files")
-
+    
     # 파일 패쓰 생성
     uploaded_filenames = []
 
@@ -229,28 +232,43 @@ def upload_images():
     output_folder_path = os.path.join(current_app.config["OUTPUT_FOLDER"], file_key)
 
     # 이미지에 대한 txt파일 생성
-    catption_res = gen_tagger(file_key)
-    if catption_res == False:
-        print("태그 생성 실패")
-        return jsonify({"error": "Tag creation failed"}), 400
-    else:
-        print("태그 생성 성공")
+    
 
+    
+    thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key))
+    thread.start()
+    return jsonify({'message': "result"}), 200
+    
+# # @celery_app.task
+def upload_images(user_id,request_independentKey,file_key):
     # 모델 생성중
     cm_processing_status(user_id,request_independentKey, 0)
 
-    # customized 모델 생성
-    train_res = train_model(file_key)
-    if train_res == False:
-        cm_processing_status(user_id,request_independentKey, 2)  # 모델 생성 실패
-        print("모델 생성 실패")
-        return jsonify({"error": "customized model creation failed"}), 400
+    with app.app_context():
+        catption_res = gen_tagger(file_key)
+        if catption_res == False:
+            cm_processing_status(user_id,request_independentKey, 2)  # 모델 생성 실패
+            print("태그 생성 실패")
+            return jsonify({"error": "Tag creation failed"}), 400
+        else:
+            print("태그 생성 성공")
 
-    cm_processing_status(user_id,request_independentKey,1)#모델 생성 완료
-    save_model_db(user_id,request_independentKey)
 
-    model_name=file_key+'.safetensors'
-    return jsonify({'user_id':user_id,'model_name':model_name,'model_path': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
+        # customized 모델 생성
+        train_res = train_model(file_key)
+        if train_res == False:
+            cm_processing_status(user_id,request_independentKey, 2)  # 모델 생성 실패
+            print("모델 생성 실패")
+            return jsonify({"error": "customized model creation failed"}), 400
+
+        cm_processing_status(user_id,request_independentKey,1)#모델 생성 완료
+        save_model_db(user_id,request_independentKey)
+
+        model_name=file_key+'.safetensors'
+
+
+    
+    # return jsonify({'user_id':user_id,'model_name':model_name,'model_path': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
     
 
 def allowed_file(filename):
@@ -363,7 +381,7 @@ def cm_processing_status(user_id,request_independentKey, status_num):
                     change_processing.status = cm_status.fail.name
                     print("모델 생성 실패 업데이트")
                 if(status_num==3):
-                    change_processing.status = "삭제"
+                    change_processing.status = cm_status.removed.name
             session.commit()
 
         except Exception as e:

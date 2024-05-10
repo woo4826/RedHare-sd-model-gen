@@ -59,7 +59,7 @@ echo "[[datasets]]" >> "$DATASET_CONFIG_FILE"
 echo "[[datasets.subsets]]" >> "$DATASET_CONFIG_FILE"
 echo "image_dir = '/workspace/uploads/$FOLDER_KEY'" >> "$DATASET_CONFIG_FILE"
 echo "caption_extension = '.txt'" >> "$DATASET_CONFIG_FILE"
-echo "num_repeats = 2" >> "$DATASET_CONFIG_FILE"
+echo "num_repeats = 20" >> "$DATASET_CONFIG_FILE"
 
 source activate conda
 
@@ -69,7 +69,7 @@ accelerate launch --num_cpu_threads_per_process 2 train_network.py \
   --output_name="$OUTPUT_NAME" \
   --dataset_config="/workspace/train/dc_$FOLDER_KEY.toml" \
   --train_batch_size=2 \
-  --max_train_epochs=2 \
+  --max_train_epochs=20 \
   --resolution="512,512" \
   --optimizer_type="AdamW8bit" \
   --learning_rate=1e-4 \

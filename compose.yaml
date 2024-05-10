@@ -25,6 +25,7 @@ services:
     extra_hosts:
      - 'host.docker.internal:host-gateway'
     ipc: host #공유 메모리 부족 문제 무시
+    
 
   # nginx:
   #   image: nginx:1.24
