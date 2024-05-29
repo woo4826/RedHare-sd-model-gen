@@ -53,8 +53,8 @@ class cm_status(Enum):
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# def create_tables():
-#     Base.metadata.create_all(engine)
+def create_tables():
+    Base.metadata.create_all(engine)
 
 class User(Base):
     __tablename__ = 'users'
@@ -76,11 +76,13 @@ class CustomizedModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)
     independent_key = Column(String(255), nullable=False)
+    thumbnail_image = Column(String(255), nullable=True)
+    cm_nickname = Column(String(255), nullable=True)
     createdAt = Column(DateTime,nullable=True)
     updatedAt = Column(DateTime,nullable=True)
 
     def __repr__(self):
-        return f'<CustomizedModel {self.independent_key}>'
+        return f'<CustomizedModel {self.independent_key}, {self.user_id}, {self.thumbnail_image}, {self.cm_nickname}>'
 
 class CMProcessing(Base):
     __tablename__ = 'CMProcessings'
@@ -88,6 +90,8 @@ class CMProcessing(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)
     independent_key = Column(String(255), nullable=False)
+    thumbnail_image = Column(String(255), nullable=True)
+    cm_nickname = Column(String(255), nullable=True)
     status = Column(String(255), nullable=False)
     createdAt = Column(DateTime,nullable=True)
     updatedAt = Column(DateTime,nullable=True)
@@ -140,6 +144,8 @@ def show_models():
                     "user_id" : target_user_id,
                     "status": processing.status,
                     "independent_key" : processing.independent_key,
+                    "thumbnail_image" : processing.thumbnail_image,
+                    "cm_nickname" : processing.cm_nickname,
                     "model_name" :  f"{target_user_id}_{processing.independent_key}"
                 }
                 )
@@ -182,6 +188,9 @@ def model_generation():
     data=request.form
     user_id = data.get("user_id")
     request_independentKey = data.get("independent_key")
+    thumbnail_image = data.get("thumbnail_image")
+    cm_nickname = data.get("cm_nickname")
+    
     check_id = exist_id(user_id)
     if not check_id:
         return jsonify({"error": "ID not exist"}), 400
@@ -197,14 +206,10 @@ def model_generation():
         print("duplicate_independentKey")
         return jsonify({"error": "The independentKey is duplicated"}), 400
 
-        
-
-    print("fuck man")
     if "files" not in request.files:
         return jsonify({"error": "No files provided"}), 400
     else:
         print("image file exist")
-    print("fuck man")
 
     files = request.files.getlist("files")
     
@@ -235,19 +240,18 @@ def model_generation():
     
 
     
-    thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key))
+    thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key,thumbnail_image,cm_nickname))
     thread.start()
     return jsonify({'message': "result"}), 200
     
-# # @celery_app.task
-def upload_images(user_id,request_independentKey,file_key):
+def upload_images(user_id,request_independentKey,file_key,thumbnail_image,cm_nickname):
     # 모델 생성중
-    cm_processing_status(user_id,request_independentKey, 0)
+    cm_processing_status(user_id,request_independentKey, 0,thumbnail_image,cm_nickname)
 
     with app.app_context():
         catption_res = gen_tagger(file_key)
         if catption_res == False:
-            cm_processing_status(user_id,request_independentKey, 2)  # 모델 생성 실패
+            cm_processing_status(user_id,request_independentKey, 2,thumbnail_image,cm_nickname)  # 모델 생성 실패
             print("태그 생성 실패")
             return jsonify({"error": "Tag creation failed"}), 400
         else:
@@ -257,12 +261,12 @@ def upload_images(user_id,request_independentKey,file_key):
         # customized 모델 생성
         train_res = train_model(file_key)
         if train_res == False:
-            cm_processing_status(user_id,request_independentKey, 2)  # 모델 생성 실패
+            cm_processing_status(user_id,request_independentKey, 2,thumbnail_image,cm_nickname)  # 모델 생성 실패
             print("모델 생성 실패")
             return jsonify({"error": "customized model creation failed"}), 400
 
-        cm_processing_status(user_id,request_independentKey,1)#모델 생성 완료
-        save_model_db(user_id,request_independentKey)
+        cm_processing_status(user_id,request_independentKey,1,thumbnail_image,cm_nickname)#모델 생성 완료
+        save_model_db(user_id,request_independentKey,thumbnail_image,cm_nickname)
 
         model_name=file_key+'.safetensors'
 
@@ -361,13 +365,15 @@ def find_files_with_username(directory, username):
 
 
 # 모델 상태 업데이트
-def cm_processing_status(user_id,request_independentKey, status_num):
+def cm_processing_status(user_id,request_independentKey, status_num,request_thumbnail_image = None,request_cm_nickname = None):
     with Session() as session:
         try:
             if status_num==0: #생성중
                 change_processing = CMProcessing(independent_key=request_independentKey,
                                   user_id=user_id,
                                   status=cm_status.generating.name,
+                                  thumbnail_image=request_thumbnail_image,
+                                  cm_nickname=request_cm_nickname,
                                   createdAt=datetime.now(),
                                   updatedAt=datetime.now())
                 session.add(change_processing)
@@ -390,12 +396,13 @@ def cm_processing_status(user_id,request_independentKey, status_num):
 
 
 # 모델 DB 저장
-def save_model_db(request_id, request_independentKey):
+def save_model_db(request_id, request_independentKey,request_thumbnail_image,request_cm_nickname):
     with Session() as session:
         try:
             save_model = CustomizedModel(user_id=request_id, independent_key=request_independentKey,
-                                  createdAt=datetime.now(),
-                                  updatedAt=datetime.now())
+                                thumbnail_image = request_thumbnail_image, cm_nickname = request_cm_nickname,
+                                createdAt=datetime.now(),
+                                updatedAt=datetime.now())
             session.add(save_model)
             session.commit()
         except Exception as e:
@@ -437,5 +444,6 @@ def exist_id(user_id):
 
 
 if __name__ == "__main__":
-    # create_tables()
+    create_tables()
     app.run(host="0.0.0.0", port=4000, debug=True)
+ 
