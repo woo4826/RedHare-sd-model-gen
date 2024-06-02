@@ -346,7 +346,7 @@ def upload_video():
     
 
     
-    thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key,thumbnail_image,cm_nickname))
+    thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key,thumbnail_image,cm_nickname,0))
     thread.start()
     return jsonify({'message': "result"}), 200
 
