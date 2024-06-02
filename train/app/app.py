@@ -1,6 +1,7 @@
 from flask import Blueprint, Flask, jsonify, request, current_app
 import subprocess
 import os
+import cv2
 
 from http.client import HTTPException
 import io
@@ -23,6 +24,8 @@ from sqlalchemy.orm import declarative_base
 import mysql.connector
 
 from enum import Enum, auto
+
+import time
 
 UPLOAD_FOLDER = "/workspace/uploads"
 OUTPUT_FOLDER = "/workspace/output"
@@ -91,6 +94,7 @@ class CMProcessing(Base):
     user_id = Column(Integer, nullable=False)
     independent_key = Column(String(255), nullable=False)
     thumbnail_image = Column(String(255), nullable=True)
+    file_number = Column(Integer, nullable=True)
     cm_nickname = Column(String(255), nullable=True)
     status = Column(String(255), nullable=False)
     createdAt = Column(DateTime,nullable=True)
@@ -99,6 +103,20 @@ class CMProcessing(Base):
     def __repr__(self):
         return f"<CMProcessing(id={self.id}, independent_key='{self.independent_key}', status='{self.status}')>"
 
+@app.route("/ttt", methods=["GET"])
+def test():
+    #os.system('python new_trainning.py')
+    command = ['python3','-u','new_trainning.py','-r']
+    #result = subprocess.run(command,check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+    while result.poll() == None:
+        out = result.stdout.readline()
+        print(out, end='')
+
+    # 프로세스 종료 후 남은 출력 읽기
+    for out in result.stdout.readlines():
+        print(out, end='')
 
 @app.route("/DB_check", methods=["GET"])
 def connect_DB():
@@ -146,7 +164,10 @@ def show_models():
                     "independent_key" : processing.independent_key,
                     "thumbnail_image" : processing.thumbnail_image,
                     "cm_nickname" : processing.cm_nickname,
-                    "model_name" :  f"{target_user_id}_{processing.independent_key}"
+                    "file_number" : processing.file_number,
+                    "model_name" :  f"{target_user_id}_{processing.independent_key}",
+                    "createdAt" : processing.createdAt.strftime('%Y.%m.%d %H:%M'),
+                    "updateAt" : processing.updatedAt.strftime('%Y.%m.%d %H:%M'),
                 }
                 )
             return jsonify({"models": model_info}), 200
@@ -189,6 +210,8 @@ def model_generation():
     user_id = data.get("user_id")
     request_independentKey = data.get("independent_key")
     thumbnail_image = data.get("thumbnail_image")
+    file_number = data.get("file_number") # 추가됨
+    
     cm_nickname = data.get("cm_nickname")
     
     check_id = exist_id(user_id)
@@ -240,13 +263,101 @@ def model_generation():
     
 
     
+    thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key,thumbnail_image,cm_nickname,file_number))
+    thread.start()
+    return jsonify({'message': "result"}), 200
+
+
+
+@app.route('/model/video', methods=['POST'])
+def upload_video():
+    data=request.form
+    user_id = data.get("user_id")
+    request_independentKey = data.get("independent_key")
+    thumbnail_image = data.get("thumbnail_image")
+    cm_nickname = data.get("cm_nickname")
+    interval_str = data.get("interval")
+    
+    
+    check_id = exist_id(user_id)
+    if not check_id:
+        return jsonify({"error": "ID not exist"}), 400
+
+    
+    if not request_independentKey:
+        return jsonify({"error": "No independentKey provided in the request"}), 400
+    print(request_independentKey)
+
+    # independentKey 중복검사
+    duplicate_check = duplicate_independentKey(request_independentKey)
+    if duplicate_check:
+        print("duplicate_independentKey")
+        return jsonify({"error": "The independentKey is duplicated"}), 400
+
+
+    
+    # 파일 패쓰 생성
+    uploaded_filenames = []
+
+    # 모델 이름 생성
+    file_key = user_id + "_" + request_independentKey
+
+    print("independentKey path 생성:", file_key)
+
+    # 비디오 저장장
+    # video 변수는 FileStorage 객체입니다.
+    video = request.files['video']
+    # FileStorage 객체에서 안전한 파일 이름을 추출합니다.
+    filename = "video" + file_key
+
+    # 추출된 파일 이름과 업로드 폴더 경로를 결합합니다.
+    video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    # 결합된 경로에 파일을 저장합니다.
+    video.save(video_path)
+    
+    # 동영상 파일을 열기
+    vidcap = cv2.VideoCapture(video_path)
+    success, image = vidcap.read()
+    count = 0
+    interval = int(interval_str)
+    uploaded_filenames = []
+
+    # 프레임을 추출하고 파일로 저장
+    while success:
+        if count % interval == 0:
+            # 업로드 폴더 경로 설정
+            upload_folder_path = os.path.join(current_app.config["UPLOAD_FOLDER"], file_key)
+            os.makedirs(upload_folder_path, exist_ok=True)
+
+            # 파일 이름 설정 (1, 2, 3, ...)
+            filename = f"{count // interval + 1}.png"
+            filepath = os.path.join(upload_folder_path, filename)
+
+            # 이미지 파일로 저장
+            cv2.imwrite(filepath, image)
+            uploaded_filenames.append(f"uploads/{file_key}/{filename}")
+
+        success, image = vidcap.read()
+        count += 1
+
+    output_folder_path = os.path.join(current_app.config["OUTPUT_FOLDER"], file_key)
+
+    # 이미지에 대한 txt파일 생성
+    
+
+    
     thread = threading.Thread(target=upload_images,args = (user_id,request_independentKey,file_key,thumbnail_image,cm_nickname))
     thread.start()
     return jsonify({'message': "result"}), 200
+
+
+
     
-def upload_images(user_id,request_independentKey,file_key,thumbnail_image,cm_nickname):
+def upload_images(user_id,request_independentKey,file_key,thumbnail_image,cm_nickname,file_number):
+    
+    start_time = time.time()
     # 모델 생성중
-    cm_processing_status(user_id,request_independentKey, 0,thumbnail_image,cm_nickname)
+    cm_processing_status(user_id,request_independentKey, 0,thumbnail_image,cm_nickname,file_number)
 
     with app.app_context():
         catption_res = gen_tagger(file_key)
@@ -270,7 +381,10 @@ def upload_images(user_id,request_independentKey,file_key,thumbnail_image,cm_nic
 
         model_name=file_key+'.safetensors'
 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
 
+    print(f"실행 시간: {elapsed_time}초")
     
     # return jsonify({'user_id':user_id,'model_name':model_name,'model_path': output_folder_path, 'result': "Customized Model Creation Completed"}), 200
     
@@ -283,12 +397,16 @@ def allowed_file(filename):
 # 특정 디렉토리에 대해 이미지 태그 생성
 def train_model(key):
     script_path = "/workspace/train/entrypoint.sh"
+    #command = ['python3','new_trainning.py',key]
     try:
         # result=subprocess.run(['/bin/bash', script_path, "stabilityai/stable-diffusion-2-1",key,key])
         result = subprocess.run(["/bin/bash", script_path, "/workspace/workspace/model/magic.safetensors", key, key])
+        #result = subprocess.run(command,check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(result.stdout)
         if result.returncode != 0:
             return False
     except subprocess.CalledProcessError as e:
+        print("Error",e)
         return False
     return True
 
@@ -298,7 +416,7 @@ def gen_tagger(folder_name: str):
     # response = requests.get("http://127.0.0.1:7860/tagger/v1/interrogators")
     # print(response.status_code)
 
-    sd_url = "http://203.252.161.106:7860/tagger/v1/interrogate"
+    sd_url = "http://redhare.ddns.net:6786/tagger/v1/interrogate"
     # sd_url = 'https://92dba0dbfb47e03d96.gradio.live/tagger/v1/interrogate'
     model = 'wd14-vit.v1'
     threshold = 0.35
@@ -365,7 +483,7 @@ def find_files_with_username(directory, username):
 
 
 # 모델 상태 업데이트
-def cm_processing_status(user_id,request_independentKey, status_num,request_thumbnail_image = None,request_cm_nickname = None):
+def cm_processing_status(user_id,request_independentKey, status_num,request_thumbnail_image = None,request_cm_nickname = None, file_number = 0 ):
     with Session() as session:
         try:
             if status_num==0: #생성중
@@ -374,6 +492,7 @@ def cm_processing_status(user_id,request_independentKey, status_num,request_thum
                                   status=cm_status.generating.name,
                                   thumbnail_image=request_thumbnail_image,
                                   cm_nickname=request_cm_nickname,
+                                  file_number = file_number,
                                   createdAt=datetime.now(),
                                   updatedAt=datetime.now())
                 session.add(change_processing)
